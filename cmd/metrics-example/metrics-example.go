@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	"github.com/rcrowley/go-metrics"
-	// "github.com/rcrowley/go-metrics/stathat"
+
+	"github.com/weareyolo/go-metrics"
+
 	"log"
 	"math/rand"
 	"os"
-	// "syslog"
+
 	"time"
 )
 

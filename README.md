@@ -1,14 +1,8 @@
-go-metrics
-==========
+# go-metrics
 
-![travis build status](https://travis-ci.org/rcrowley/go-metrics.svg?branch=master)
+Go port of [Coda Hale's Metrics library](https://github.com/dropwizard/metrics).
 
-Go port of Coda Hale's Metrics library: <https://github.com/dropwizard/metrics>.
-
-Documentation: <http://godoc.org/github.com/rcrowley/go-metrics>.
-
-Usage
------
+## Usage
 
 Create and update metrics:
 
@@ -39,7 +33,7 @@ t.Time(func() {})
 t.Update(47)
 ```
 
-Register() is not threadsafe. For threadsafe metric registration use
+Register() is not thread-safe. For thread-safe metric registration use
 GetOrRegister:
 
 ```go
@@ -64,66 +58,11 @@ Periodically log every metric in human-readable form to standard error:
 go metrics.Log(metrics.DefaultRegistry, 5 * time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 ```
 
-Periodically log every metric in slightly-more-parseable form to syslog:
+Periodically log every metric in slightly-more-parsable form to syslog:
 
 ```go
 w, _ := syslog.Dial("unixgram", "/dev/log", syslog.LOG_INFO, "metrics")
 go metrics.Syslog(metrics.DefaultRegistry, 60e9, w)
-```
-
-Periodically emit every metric to Graphite using the [Graphite client](https://github.com/cyberdelia/go-metrics-graphite):
-
-```go
-
-import "github.com/cyberdelia/go-metrics-graphite"
-
-addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
-go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
-```
-
-Periodically emit every metric into InfluxDB:
-
-**NOTE:** this has been pulled out of the library due to constant fluctuations
-in the InfluxDB API. In fact, all client libraries are on their way out. see
-issues [#121](https://github.com/rcrowley/go-metrics/issues/121) and
-[#124](https://github.com/rcrowley/go-metrics/issues/124) for progress and details.
-
-```go
-import "github.com/vrischmann/go-metrics-influxdb"
-
-go influxdb.InfluxDB(metrics.DefaultRegistry,
-  10e9, 
-  "127.0.0.1:8086", 
-  "database-name", 
-  "username", 
-  "password"
-)
-```
-
-Periodically upload every metric to Librato using the [Librato client](https://github.com/mihasya/go-metrics-librato):
-
-**Note**: the client included with this repository under the `librato` package
-has been deprecated and moved to the repository linked above.
-
-```go
-import "github.com/mihasya/go-metrics-librato"
-
-go librato.Librato(metrics.DefaultRegistry,
-    10e9,                  // interval
-    "example@example.com", // account owner email address
-    "token",               // Librato API token
-    "hostname",            // source
-    []float64{0.95},       // percentiles to send
-    time.Millisecond,      // time unit
-)
-```
-
-Periodically emit every metric to StatHat:
-
-```go
-import "github.com/rcrowley/go-metrics/stathat"
-
-go stathat.Stathat(metrics.DefaultRegistry, 10e9, "example@example.com")
 ```
 
 Maintain all metrics along with expvars at `/debug/metrics`:
@@ -132,37 +71,28 @@ This uses the same mechanism as [the official expvar](http://golang.org/pkg/expv
 but exposed under `/debug/metrics`, which shows a json representation of all your usual expvars
 as well as all your go-metrics.
 
-
 ```go
-import "github.com/rcrowley/go-metrics/exp"
+import "github.com/weareyolo/go-metrics/exp"
 
 exp.Exp(metrics.DefaultRegistry)
 ```
 
-Installation
-------------
+## Installation
 
 ```sh
-go get github.com/rcrowley/go-metrics
+go get github.com/weareyolo/go-metrics
 ```
 
-StatHat support additionally requires their Go client:
-
-```sh
-go get github.com/stathat/go
-```
-
-Publishing Metrics
-------------------
+## Publishing Metrics
 
 Clients are available for the following destinations:
 
-* Librato - https://github.com/mihasya/go-metrics-librato
-* Graphite - https://github.com/cyberdelia/go-metrics-graphite
-* InfluxDB - https://github.com/vrischmann/go-metrics-influxdb
-* Ganglia - https://github.com/appscode/metlia
-* Prometheus - https://github.com/deathowl/go-metrics-prometheus
-* DataDog - https://github.com/syntaqx/go-metrics-datadog
-* SignalFX - https://github.com/pascallouisperez/go-metrics-signalfx
-* Honeycomb - https://github.com/getspine/go-metrics-honeycomb
-* Wavefront - https://github.com/wavefrontHQ/go-metrics-wavefront
+- [Librato](https://github.com/mihasya/go-metrics-librato)
+- [Graphite](https://github.com/cyberdelia/go-metrics-graphite)
+- [InfluxDB](https://github.com/vrischmann/go-metrics-influxdb)
+- [Ganglia](https://github.com/appscode/metlia)
+- [Prometheus](https://github.com/deathowl/go-metrics-prometheus)
+- [DataDog](https://github.com/syntaqx/go-metrics-datadog)
+- [SignalFX](https://github.com/pascallouisperez/go-metrics-signalfx)
+- [Honeycomb](https://github.com/getspine/go-metrics-honeycomb)
+- [Wavefront](https://github.com/wavefrontHQ/go-metrics-wavefront)

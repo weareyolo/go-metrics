@@ -30,65 +30,30 @@ func BenchmarkMetrics(b *testing.B) {
 	ch := make(chan bool)
 
 	wgD := &sync.WaitGroup{}
-	/*
-		wgD.Add(1)
-		go func() {
-			defer wgD.Done()
-			//log.Println("go CaptureDebugGCStats")
-			for {
-				select {
-				case <-ch:
-					//log.Println("done CaptureDebugGCStats")
-					return
-				default:
-					CaptureDebugGCStatsOnce(r)
-				}
-			}
-		}()
-	//*/
-
 	wgR := &sync.WaitGroup{}
-	//*
+
 	wgR.Add(1)
 	go func() {
 		defer wgR.Done()
-		//log.Println("go CaptureRuntimeMemStats")
+
 		for {
 			select {
 			case <-ch:
-				//log.Println("done CaptureRuntimeMemStats")
 				return
 			default:
 				CaptureRuntimeMemStatsOnce(r)
 			}
 		}
 	}()
-	//*/
 
 	wgW := &sync.WaitGroup{}
-	/*
-		wgW.Add(1)
-		go func() {
-			defer wgW.Done()
-			//log.Println("go Write")
-			for {
-				select {
-				case <-ch:
-					//log.Println("done Write")
-					return
-				default:
-					WriteOnce(r, ioutil.Discard)
-				}
-			}
-		}()
-	//*/
 
 	wg := &sync.WaitGroup{}
 	wg.Add(FANOUT)
 	for i := 0; i < FANOUT; i++ {
 		go func(i int) {
 			defer wg.Done()
-			//log.Println("go", i)
+
 			for i := 0; i < b.N; i++ {
 				c.Inc(1)
 				g.Update(int64(i))
@@ -97,7 +62,6 @@ func BenchmarkMetrics(b *testing.B) {
 				m.Mark(1)
 				t.Update(1)
 			}
-			//log.Println("done", i)
 		}(i)
 	}
 	wg.Wait()
