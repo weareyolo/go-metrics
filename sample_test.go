@@ -55,15 +55,15 @@ func BenchmarkCopy1000000(b *testing.B) {
 }
 
 func BenchmarkExpDecaySample257(b *testing.B) {
-	benchmarkSample(b, NewExpDecaySample(257, 0.015))
+	benchmarkSample(b, NewExpDecaySample(WithReservoirSize(257)))
 }
 
 func BenchmarkExpDecaySample514(b *testing.B) {
-	benchmarkSample(b, NewExpDecaySample(514, 0.015))
+	benchmarkSample(b, NewExpDecaySample(WithReservoirSize(514)))
 }
 
 func BenchmarkExpDecaySample1028(b *testing.B) {
-	benchmarkSample(b, NewExpDecaySample(1028, 0.015))
+	benchmarkSample(b, NewExpDecaySample())
 }
 
 func BenchmarkUniformSample257(b *testing.B) {
@@ -80,7 +80,7 @@ func BenchmarkUniformSample1028(b *testing.B) {
 
 func TestExpDecaySample10(t *testing.T) {
 	rand.Seed(1)
-	s := NewExpDecaySample(100, 0.99)
+	s := NewExpDecaySample(WithReservoirSize(100), WithAlpha(0.99))
 	for i := 0; i < 10; i++ {
 		s.Update(int64(i))
 	}
@@ -102,7 +102,7 @@ func TestExpDecaySample10(t *testing.T) {
 
 func TestExpDecaySample100(t *testing.T) {
 	rand.Seed(1)
-	s := NewExpDecaySample(1000, 0.01)
+	s := NewExpDecaySample(WithReservoirSize(1000), WithAlpha(0.01))
 	for i := 0; i < 100; i++ {
 		s.Update(int64(i))
 	}
@@ -124,7 +124,7 @@ func TestExpDecaySample100(t *testing.T) {
 
 func TestExpDecaySample1000(t *testing.T) {
 	rand.Seed(1)
-	s := NewExpDecaySample(100, 0.99)
+	s := NewExpDecaySample(WithReservoirSize(100), WithAlpha(0.99))
 	for i := 0; i < 1000; i++ {
 		s.Update(int64(i))
 	}
@@ -150,7 +150,7 @@ func TestExpDecaySample1000(t *testing.T) {
 // effectively freezing the set of samples until a rescale step happens.
 func TestExpDecaySampleNanosecondRegression(t *testing.T) {
 	rand.Seed(1)
-	s := NewExpDecaySample(100, 0.99)
+	s := NewExpDecaySample(WithReservoirSize(100), WithAlpha(0.99))
 	for i := 0; i < 100; i++ {
 		s.Update(10)
 	}
@@ -170,7 +170,7 @@ func TestExpDecaySampleNanosecondRegression(t *testing.T) {
 }
 
 func TestExpDecaySampleRescale(t *testing.T) {
-	s := NewExpDecaySample(2, 0.001).(*ExpDecaySample)
+	s := NewExpDecaySample(WithReservoirSize(2), WithAlpha(0.001)).(*ExpDecaySample)
 	s.update(time.Now(), 1)
 	s.update(time.Now().Add(time.Hour+time.Microsecond), 1)
 	for _, v := range s.values.Values() {
@@ -183,7 +183,7 @@ func TestExpDecaySampleRescale(t *testing.T) {
 func TestExpDecaySampleSnapshot(t *testing.T) {
 	now := time.Now()
 	rand.Seed(1)
-	s := NewExpDecaySample(100, 0.99)
+	s := NewExpDecaySample(WithReservoirSize(100), WithAlpha(0.99))
 	for i := 1; i <= 10000; i++ {
 		s.(*ExpDecaySample).update(now.Add(time.Duration(i)), int64(i))
 	}
@@ -195,7 +195,7 @@ func TestExpDecaySampleSnapshot(t *testing.T) {
 func TestExpDecaySampleStatistics(t *testing.T) {
 	now := time.Now()
 	rand.Seed(1)
-	s := NewExpDecaySample(100, 0.99)
+	s := NewExpDecaySample(WithReservoirSize(100), WithAlpha(0.99))
 	for i := 1; i <= 10000; i++ {
 		s.(*ExpDecaySample).update(now.Add(time.Duration(i)), int64(i))
 	}

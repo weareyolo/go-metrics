@@ -170,7 +170,7 @@ func RegisterRuntimeMemStats(r Registry) {
 		runtimeMetrics.MemStats.NextGC = NewGauge()
 		runtimeMetrics.MemStats.NumGC = NewGauge()
 		runtimeMetrics.MemStats.GCCPUFraction = NewGaugeFloat64()
-		runtimeMetrics.MemStats.PauseNs = NewHistogram(NewExpDecaySample(1028, 0.015))
+		runtimeMetrics.MemStats.PauseNs = NewHistogram(NewExpDecaySample())
 		runtimeMetrics.MemStats.PauseTotalNs = NewGauge()
 		runtimeMetrics.MemStats.StackInuse = NewGauge()
 		runtimeMetrics.MemStats.StackSys = NewGauge()

@@ -59,7 +59,7 @@ func RegisterDebugGCStats(r Registry) {
 	registerDebugMetricsOnce.Do(func() {
 		debugMetrics.GCStats.LastGC = NewGauge()
 		debugMetrics.GCStats.NumGC = NewGauge()
-		debugMetrics.GCStats.Pause = NewHistogram(NewExpDecaySample(1028, 0.015))
+		debugMetrics.GCStats.Pause = NewHistogram(NewExpDecaySample())
 		//debugMetrics.GCStats.PauseQuantiles = NewHistogram(NewExpDecaySample(1028, 0.015))
 		debugMetrics.GCStats.PauseTotal = NewGauge()
 		debugMetrics.ReadGCStats = NewTimer()
