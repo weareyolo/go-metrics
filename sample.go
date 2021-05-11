@@ -80,7 +80,7 @@ func WithRescaleThreshold(threshold time.Duration) expDecaySampleOption {
 }
 
 // WithEpsilon specifies the Epsilon for the ExpDecaySample
-// i.e. on rescale, if the key/weight value falls below this, it will be
+// i.e. on rescale, if the priority/weight value falls below this, it will be
 // discarded to avoid keeping outdated values forever when no updates are
 // processed for a while
 func WithEpsilon(epsilon float64) expDecaySampleOption {
