@@ -78,7 +78,7 @@ func main() {
 	})
 	r.Register("baz", hc)
 
-	s := metrics.NewExpDecaySample(1028, 0.015)
+	s := metrics.NewExpDecaySample()
 	//s := metrics.NewUniformSample(1028)
 	h := metrics.NewHistogram(s)
 	r.Register("bang", h)

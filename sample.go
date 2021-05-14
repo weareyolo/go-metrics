@@ -6,9 +6,9 @@ import (
 	"sort"
 	"sync"
 	"time"
-)
 
-const rescaleThreshold = time.Hour
+	"github.com/benbjohnson/clock"
+)
 
 // Samples maintain a statistically-significant selection of values from
 // a stream.
@@ -35,37 +35,108 @@ type Sample interface {
 //
 // <http://dimacs.rutgers.edu/~graham/pubs/papers/fwddecay.pdf>
 type ExpDecaySample struct {
-	alpha         float64
-	count         int64
-	mutex         sync.Mutex
-	reservoirSize int
-	t0, t1        time.Time
-	values        *expDecaySampleHeap
+	expDecaySampleConfig
+
+	mutex sync.Mutex
+	clock clock.Clock
+
+	count  int64
+	t0, t1 time.Time
+	values *expDecaySampleHeap
+}
+
+type expDecaySampleConfig struct {
+	reservoirSize    int
+	alpha            float64
+	rescaleThreshold time.Duration
+	epsilon          float64
+}
+
+// expDecaySampleOption is a type made to override default values for the config
+type expDecaySampleOption func(c *expDecaySampleConfig)
+
+// WithReservoirSize specifies the Reservoir Size for the ExpDecaySample
+// i.e. the maximum number of values it can hold
+func WithReservoirSize(size int) expDecaySampleOption {
+	return func(c *expDecaySampleConfig) {
+		c.reservoirSize = size
+	}
+}
+
+// WithAlpha specifies the Alpha for the ExpDecaySample
+// i.e. the coefficient used in the decaying formula
+func WithAlpha(alpha float64) expDecaySampleOption {
+	return func(c *expDecaySampleConfig) {
+		c.alpha = alpha
+	}
+}
+
+// WithRescaleThreshold specifies the Rescale Threshold for the ExpDecaySample
+// i.e. it will wait this long before rescaling data on read/update
+func WithRescaleThreshold(threshold time.Duration) expDecaySampleOption {
+	return func(c *expDecaySampleConfig) {
+		c.rescaleThreshold = threshold
+	}
+}
+
+// WithEpsilon specifies the Epsilon for the ExpDecaySample
+// i.e. on rescale, if the priority/weight value falls below this, it will be
+// discarded to avoid keeping outdated values forever when no updates are
+// processed for a while
+func WithEpsilon(epsilon float64) expDecaySampleOption {
+	return func(c *expDecaySampleConfig) {
+		c.epsilon = epsilon
+	}
+}
+
+func getConfig(opts []expDecaySampleOption) expDecaySampleConfig {
+	cfg := expDecaySampleConfig{
+		reservoirSize:    1028,
+		alpha:            0.015,
+		rescaleThreshold: time.Hour,
+		epsilon:          1e-8,
+	}
+
+	for _, o := range opts {
+		o(&cfg)
+	}
+
+	return cfg
 }
 
 // NewExpDecaySample constructs a new exponentially-decaying sample with the
 // given reservoir size and alpha.
-func NewExpDecaySample(reservoirSize int, alpha float64) Sample {
+func NewExpDecaySample(opts ...expDecaySampleOption) Sample {
 	if UseNilMetrics {
 		return NilSample{}
 	}
+
+	cfg := getConfig(opts)
 	s := &ExpDecaySample{
-		alpha:         alpha,
-		reservoirSize: reservoirSize,
-		t0:            time.Now(),
-		values:        newExpDecaySampleHeap(reservoirSize),
+		expDecaySampleConfig: cfg,
+		clock:                clock.New(),
+		values:               newExpDecaySampleHeap(cfg.reservoirSize),
 	}
-	s.t1 = s.t0.Add(rescaleThreshold)
+	s.setTime(s.clock.Now())
+
 	return s
+}
+
+func (s *ExpDecaySample) setTime(t time.Time) {
+	s.t0 = t
+	s.t1 = t.Add(s.rescaleThreshold)
 }
 
 // Clear clears all samples.
 func (s *ExpDecaySample) Clear() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	s.clear(s.clock.Now())
+}
+
+func (s *ExpDecaySample) clear(t time.Time) {
 	s.count = 0
-	s.t0 = time.Now()
-	s.t1 = s.t0.Add(rescaleThreshold)
+	s.setTime(t)
 	s.values.Clear()
 }
 
@@ -116,7 +187,7 @@ func (s *ExpDecaySample) Size() int {
 func (s *ExpDecaySample) Snapshot() Sample {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.rescaleIfNeeded(time.Now())
+	s.rescaleIfNeeded(s.clock.Now())
 	vals := s.values.Values()
 	values := make([]int64, len(vals))
 	for i, v := range vals {
@@ -140,14 +211,14 @@ func (s *ExpDecaySample) Sum() int64 {
 
 // Update samples a new value.
 func (s *ExpDecaySample) Update(v int64) {
-	s.update(time.Now(), v)
+	s.update(s.clock.Now(), v)
 }
 
 // Values returns a copy of the values in the sample.
 func (s *ExpDecaySample) Values() []int64 {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.rescaleIfNeeded(time.Now())
+	s.rescaleIfNeeded(s.clock.Now())
 	vals := s.values.Values()
 	values := make([]int64, len(vals))
 	for i, v := range vals {
@@ -166,11 +237,14 @@ func (s *ExpDecaySample) Variance() float64 {
 func (s *ExpDecaySample) update(t time.Time, v int64) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
 	s.rescaleIfNeeded(t)
+
 	s.count++
 	if s.values.Size() == s.reservoirSize {
 		s.values.Pop()
 	}
+
 	s.values.Push(expDecaySample{
 		k: math.Exp(t.Sub(s.t0).Seconds()*s.alpha) / rand.Float64(),
 		v: v,
@@ -181,12 +255,16 @@ func (s *ExpDecaySample) rescaleIfNeeded(t time.Time) {
 	if t.After(s.t1) {
 		values := s.values.Values()
 		t0 := s.t0
-		s.values.Clear()
-		s.t0 = t
-		s.t1 = s.t0.Add(rescaleThreshold)
+		s.clear(t)
+
+		factor := math.Exp(-s.alpha * s.t0.Sub(t0).Seconds())
+
 		for _, v := range values {
-			v.k = v.k * math.Exp(-s.alpha*s.t0.Sub(t0).Seconds())
-			s.values.Push(v)
+			v.k = v.k * factor
+			if v.k >= s.epsilon {
+				s.values.Push(v)
+				s.count++
+			}
 		}
 	}
 }
@@ -572,9 +650,8 @@ func (h *expDecaySampleHeap) Pop() expDecaySample {
 	h.s[0], h.s[n] = h.s[n], h.s[0]
 	h.down(0, n)
 
-	n = len(h.s)
-	s := h.s[n-1]
-	h.s = h.s[0 : n-1]
+	s := h.s[n]
+	h.s = h.s[0:n]
 	return s
 }
 

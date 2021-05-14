@@ -57,7 +57,7 @@ var (
 // Capture new values for the Go runtime statistics exported in
 // runtime.MemStats.  This is designed to be called as a goroutine.
 func CaptureRuntimeMemStats(r Registry, d time.Duration) {
-	for _ = range time.Tick(d) {
+	for range time.Tick(d) {
 		CaptureRuntimeMemStatsOnce(r)
 	}
 }
@@ -170,7 +170,7 @@ func RegisterRuntimeMemStats(r Registry) {
 		runtimeMetrics.MemStats.NextGC = NewGauge()
 		runtimeMetrics.MemStats.NumGC = NewGauge()
 		runtimeMetrics.MemStats.GCCPUFraction = NewGaugeFloat64()
-		runtimeMetrics.MemStats.PauseNs = NewHistogram(NewExpDecaySample(1028, 0.015))
+		runtimeMetrics.MemStats.PauseNs = NewHistogram(NewExpDecaySample())
 		runtimeMetrics.MemStats.PauseTotalNs = NewGauge()
 		runtimeMetrics.MemStats.StackInuse = NewGauge()
 		runtimeMetrics.MemStats.StackSys = NewGauge()

@@ -24,7 +24,7 @@ var (
 // Capture new values for the Go garbage collector statistics exported in
 // debug.GCStats.  This is designed to be called as a goroutine.
 func CaptureDebugGCStats(r Registry, d time.Duration) {
-	for _ = range time.Tick(d) {
+	for range time.Tick(d) {
 		CaptureDebugGCStatsOnce(r)
 	}
 }
@@ -59,7 +59,7 @@ func RegisterDebugGCStats(r Registry) {
 	registerDebugMetricsOnce.Do(func() {
 		debugMetrics.GCStats.LastGC = NewGauge()
 		debugMetrics.GCStats.NumGC = NewGauge()
-		debugMetrics.GCStats.Pause = NewHistogram(NewExpDecaySample(1028, 0.015))
+		debugMetrics.GCStats.Pause = NewHistogram(NewExpDecaySample())
 		//debugMetrics.GCStats.PauseQuantiles = NewHistogram(NewExpDecaySample(1028, 0.015))
 		debugMetrics.GCStats.PauseTotal = NewGauge()
 		debugMetrics.ReadGCStats = NewTimer()
