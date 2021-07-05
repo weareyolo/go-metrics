@@ -147,11 +147,8 @@ func TestExpDecaySample__Update(t *testing.T) {
 func TestExpDecaySampleNanosecondRegression(t *testing.T) {
 	rand.Seed(1)
 
-	mClock := clock.NewMock()
-	mClock.Set(time.Date(2021, 6, 1, 0, 0, 0, 0, time.UTC))
-
 	s := NewExpDecaySample(WithReservoirSize(100), WithAlpha(0.99)).(*ExpDecaySample)
-	s.clock = mClock
+	mClock := setupClock(s)
 
 	for i := 0; i < 100; i++ {
 		s.Update(10)
@@ -175,11 +172,8 @@ func TestExpDecaySampleNanosecondRegression(t *testing.T) {
 
 func TestExpDecaySampleRescale(t *testing.T) {
 	t.Run("Size 2 + Alpha 0.001 rescaled after 1 hour", func(t *testing.T) {
-		mClock := clock.NewMock()
-		mClock.Set(time.Date(2021, 6, 1, 0, 0, 0, 0, time.UTC))
-
 		s := NewExpDecaySample(WithReservoirSize(2), WithAlpha(0.001)).(*ExpDecaySample)
-		s.clock = mClock
+		mClock := setupClock(s)
 
 		s.Update(1)
 		mClock.Add(time.Hour + time.Microsecond)
@@ -191,11 +185,9 @@ func TestExpDecaySampleRescale(t *testing.T) {
 	})
 
 	t.Run("Default but rescaled after 30 minutes", func(t *testing.T) {
-		mClock := clock.NewMock()
-		mClock.Set(time.Date(2021, 6, 1, 0, 0, 0, 0, time.UTC))
-
 		s := NewExpDecaySample(WithRescaleThreshold(30 * time.Minute)).(*ExpDecaySample)
-		s.clock = mClock
+		mClock := setupClock(s)
+
 		s.Update(1)
 
 		heapVals := s.values.Values()
@@ -367,4 +359,12 @@ func TestUniformSampleConcurrentUpdateCount(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	quit <- struct{}{}
+}
+
+func setupClock(s *ExpDecaySample) *clock.Mock {
+	mClock := clock.NewMock()
+	mClock.Set(time.Date(2021, 6, 1, 0, 0, 0, 0, time.UTC))
+	s.clock = mClock
+	s.setTime(mClock.Now())
+	return mClock
 }
