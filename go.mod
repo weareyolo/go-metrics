@@ -1,10 +1,10 @@
 module github.com/weareyolo/go-metrics
 
-go 1.18
+go 1.20
 
 require (
 	github.com/benbjohnson/clock v1.3.0
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.8.2
 )
 
 require (
